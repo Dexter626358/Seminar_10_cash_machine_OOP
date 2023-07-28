@@ -1,3 +1,4 @@
+import datetime
 import random
 from Card import Card
 from Cashmachine.Counter import Counter
@@ -5,6 +6,7 @@ from cashmachine import Cashmachine
 from Luna_algoritm import create_card_number
 from Checker import check_pin, check_sum
 from CreditCardValidator import CreditCardValidator
+import logging
 
 
 def main_menu():
@@ -29,6 +31,14 @@ def interest_money(sum_withdraw):
     return charge_money
 
 
+logging.basicConfig(filename='errors.log',
+                    filemode='a',
+                    encoding='utf-8',
+                    style='{',
+                    level=logging.INFO)
+logger = logging.getLogger()
+
+
 class UserInterface:
     card_status = False
     count_operations = 0
@@ -40,6 +50,7 @@ class UserInterface:
         return cash_machins_storage
 
     def run(self):
+        logger.info(f"Старт работы программы в {datetime.datetime.now()}")
         cash_m = self.create_cash_machines()
         card_holder = []
         counter_operations = Counter()
@@ -56,10 +67,13 @@ class UserInterface:
                         pin = random.randint(1000, 9999)
                         card_holder.append(Card(create_card_number(), 0, pin))
                         print(f"Выпущeна карта с номером {card_holder[-1].number} и пин-кодом {card_holder[-1].pin}")
+                        logger.info(f"Успешно выпущена карта в {datetime.datetime.now()}")
                     elif bank_choose == "2":  # вернуться в главное меню
+                        logger.info(f"Возврат в главное меню в {datetime.datetime.now()}")
                         break
                     else:
                         print(incorrect_input)
+                        logger.info(f"Некорректный ввод данных в {datetime.datetime.now()}")
             elif main_choose == "2":  # выбрать банкомат
                 ind_cash_machine = -1
                 while True:
@@ -69,19 +83,23 @@ class UserInterface:
                         print("Выберите банкомат")
                         for key in cash_m:
                             print(f"Банкомат № {key.id}")
+                        logger.info(f"Выведен список банкоматов в {datetime.datetime.now()}")
                         cash_mach_choose = input()
                         for ind in range(0, len(cash_m)):
                             if cash_mach_choose == str(cash_m[ind].id):
                                 ind_cash_machine = ind
+                                logger.info(f"Успешно выбран банкомат в {datetime.datetime.now()}")
                                 break
                         if ind_cash_machine == -1:
                             print("Банкомата с таким номером не существует")
+                            logger.info(f"Некорректный ввод данных(выбор банкомата) в {datetime.datetime.now()}")
                             continue
                     elif bancomat == "2":
                         break
                     else:
                         print(incorrect_input)
                     print("Вставьте карту в банкомат. Для продолжения нажмите enter...")
+                    logger.info(f"Карта вставлена в банкомат в {datetime.datetime.now()}")
                     put_card = input()
                     while True:
                         index_card = -1
@@ -91,22 +109,28 @@ class UserInterface:
                             for i in range(0, len(card_holder)):
                                 if card_holder[i].number == get_card_number:
                                     index_card = i
+                                    logger.info(f"Успешно введен номер карты в {datetime.datetime.now()}")
                                     break
                             if index_card == -1:
                                 print("Карта с таким номером не найдена")
+                                logger.info(f"Номер карты не прошел проверку в {datetime.datetime.now()}")
                                 continue
                             break
                         else:
                             print("Введен некорректный номер карты. Попробуйте снова.")
+                            logger.info(f"Введен некорректный номер карты в {datetime.datetime.now()}")
+
                     while True:
                         print("Введите пин-код: ")
                         get_pin_number = input()
                         if check_pin(get_pin_number) and card_holder[index_card].pin == int(get_pin_number):
                             card_status = True
                             print("Пин-код принят")
+                            logger.info(f"Пин-код введен успешно в {datetime.datetime.now()}")
                             break
                         else:
                             print("Введен неверный пин-код. Пин-код должен содержать 4 цифры.")
+                            logger.info(f"Введен неверный пин-код в {datetime.datetime.now()}")
                     while card_status:
                         print(cash_machine_menu())
                         cash_machine_choose = input()
@@ -117,6 +141,7 @@ class UserInterface:
                                 if check_sum(str_money):
                                     card_holder[index_card].add_money(int(str_money))
                                     print("Счет пополнен.")
+                                    logger.info(f"Счет успешно пополнен в {datetime.datetime.now()}")
                                     cash_m[ind_cash_machine].add_money(int(str_money))
                                     counter_operations.increment(card_holder[index_card])
                                     if card_holder[index_card].show_balance() > 5_000_000:
@@ -124,6 +149,7 @@ class UserInterface:
                                     break
                                 else:
                                     print("Некорректная сумма. Попробуйте снова.")
+                                    logger.info(f"Введена некорректная сумма при пополнении счета в {datetime.datetime.now()}")
                         elif cash_machine_choose == "2":  # снять деньги
                             while True:
                                 print("Введите сумму, кратную 50$, которую Вы хотите снять со счета.")
@@ -132,22 +158,28 @@ class UserInterface:
                                     charge_money_ = interest_money(int(str_money))
                                     if cash_m[ind_cash_machine].money_on_count < int(str_money) + charge_money_:
                                         print("В банкомате недостаточно средств")
+                                        logger.info(f"В банкомате недостаточно средств в {datetime.datetime.now()}")
                                         break
                                     else:
                                         if card_holder[index_card].show_balance() >= int(str_money) + charge_money_:
                                             card_holder[index_card].withdraw_money((int(str_money)) + charge_money_)
                                             print(
                                                 f"Операция выполнена успешно с комиссией {round(charge_money_, 2)}$\n")
+                                            logger.info(f"Списание комиссии в {datetime.datetime.now()}")
                                             print("Возьмите деньги.")
                                             cash_m[ind_cash_machine].withdraw_money((int(str_money)) + charge_money_)
                                             counter_operations.increment(card_holder[index_card])
                                         else:
                                             print("У Вас недостаточно средств на счете для осуществления операции.\n")
+                                            logger.info(f"Не удалось снять деньги. На счету недостаточно средств"
+                                                        f"  в {datetime.datetime.now()}")
                                         break
                                 else:
                                     print("Некорректная сумма. Попробуйте снова.")
+                                    logger.info(f"Ввод некорректной суммы для снятия средств в {datetime.datetime.now()}")
                         elif cash_machine_choose == "3":  # вывести баланс
                             print(f"Баланс карты равен: {card_holder[index_card].show_balance()}$")
+                            logger.info(f"Проверка баланса карты в {datetime.datetime.now()}")
                             counter_operations.increment(card_holder[index_card])
 
                         elif cash_machine_choose == "4":  # выход
@@ -156,9 +188,11 @@ class UserInterface:
                         else:
                             print(incorrect_input)
             elif main_choose == "3":  # выход из программы
+                logger.info(f"Выход из программы в {datetime.datetime.now()}")
                 break
             else:
                 print(incorrect_input)
+                logger.info(f"Некорректный ввод данных в {datetime.datetime.now()}")
 
 
 ui = UserInterface()
